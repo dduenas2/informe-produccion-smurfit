@@ -1,0 +1,89 @@
+╔══════════════════════════════════════════════════════════════════╗
+║  INFORME DE PRODUCCIÓN · SMURFIT WESTROCK                        ║
+║  Dashboard offline · versión piloto                              ║
+╚══════════════════════════════════════════════════════════════════╝
+
+QUÉ ES
+──────
+Aplicación web de escritorio para visualizar el Informe de Producción
+Consolidado. Funciona 100% en el navegador, sin servidor, sin instalación,
+sin enviar datos a internet. El Excel nunca sale de tu computador.
+
+
+CONTENIDO DE LA CARPETA
+───────────────────────
+  dashboard.html      → la aplicación (abrir con doble clic)
+  lib/                → librerías locales (SheetJS + ECharts)
+    ├─ xlsx.full.min.js
+    └─ echarts.min.js
+  LEEME.txt           → este archivo
+
+
+CÓMO USARLO (60 segundos)
+─────────────────────────
+  1. Doble clic en  dashboard.html
+  2. En la pantalla de bienvenida, arrastra el Excel del Informe de
+     Producción sobre la zona marcada (o clic en "Seleccionar archivo").
+  3. Por defecto se muestra el MES ACTUAL (del día 1 al día de hoy).
+     Si necesitas otro rango, cambia "Desde" / "Hasta" arriba, o usa
+     el botón "Todo el histórico".
+  4. Navega entre las 6 pestañas:
+        Resumen · Desperdicio · Productividad · Paros · Tendencia · Detalle
+  5. Usa los filtros superiores (Máquina, Turno, Supervisor, Operario,
+     Cliente, Tipo de máquina) para refinar la vista.
+
+
+REQUISITOS
+──────────
+  · Navegador moderno: Chrome, Edge o Firefox (últimas versiones).
+  · NO requiere conexión a internet (librerías embebidas en /lib).
+  · NO requiere permisos de administrador.
+  · NO requiere Office ni Excel instalado para leer el .xlsx.
+
+
+CARACTERÍSTICAS DE SEGURIDAD
+────────────────────────────
+  · El archivo Excel se procesa en tu navegador, en memoria local.
+    No se envía a ningún servidor, no se guarda en ningún lugar.
+  · Al cerrar el navegador, los datos desaparecen. Basta con
+     cargar de nuevo el Excel actualizado.
+  · Código abierto, revisable. Sin licencias ni costos.
+
+
+DATOS / CONCEPTOS CLAVE
+───────────────────────
+  · "Producto terminado" = unidades producidas SOLO en FONDEADORAS
+     (es el producto final que sale de planta).
+  · "Desperdicio total" = suma de TODAS las máquinas (impresora,
+     tubuladora y fondeadora generan desperdicio real en su etapa).
+  · Todos los tiempos se muestran en HORAS (h); los originales del
+     Excel vienen en minutos.
+
+
+ACTUALIZACIÓN DIARIA
+────────────────────
+  El Excel de planta se actualiza a diario. Para ver los datos nuevos:
+    1. Guarda el Excel actualizado en tu equipo o red compartida.
+    2. En el dashboard: botón "Cargar otro" (arriba) y selecciona el
+       nuevo archivo.
+  No hay instalación, no hay sincronización: es carga bajo demanda.
+
+
+SI ALGO FALLA
+─────────────
+  · "XLSX is not defined": falta el archivo lib/xlsx.full.min.js.
+     Solución: verifica que la carpeta lib/ esté junto al HTML.
+  · "Error al leer": el Excel tiene formato distinto al esperado.
+     Solución: abrir el Excel, confirmar que la primera fila sean
+     los encabezados y que la hoja activa sea la única hoja.
+  · Números distintos al Excel: revisar que los filtros del Excel
+     y del dashboard coincidan EXACTAMENTE (fechas, turnos, etc.).
+
+
+SOPORTE
+───────
+  Proyecto en fase piloto. Para reportar observaciones o solicitar
+  mejoras, contactar al responsable del proyecto.
+
+  Versión:  1.0  (piloto)
+  Fecha:    abril 2026

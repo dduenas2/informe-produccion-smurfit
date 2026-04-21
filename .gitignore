@@ -1,0 +1,24 @@
+# Datos de producción (confidencial — nunca versionar)
+*.xlsx
+*.xls
+*.xlsm
+*.csv
+
+# Archivos temporales de Office
+~$*
+.~*
+
+# Archivos empaquetados (se regeneran)
+*.zip
+*.7z
+*.rar
+
+# Sistema operativo
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Editores
+.vscode/
+.idea/
+*.swp
