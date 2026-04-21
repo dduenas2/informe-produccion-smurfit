@@ -717,7 +717,7 @@ body.printing .print-header .meta { font-size: 10pt; color: #64748b; margin-top:
         <div class="card-head">
           <div>
             <div class="card-title" id="wasteChartTitle">Desperdicio por operario</div>
-            <div class="card-sub">Top 20 por kilogramos · línea de promedio</div>
+            <div class="card-sub" id="wasteChartSub">Pareto · Top 20 · barras (Kg) + % acumulado · línea 80/20</div>
           </div>
         </div>
         <div class="chart h-420" id="chartWaste"></div>
@@ -726,7 +726,7 @@ body.printing .print-header .meta { font-size: 10pt; color: #64748b; margin-top:
         <div class="card-head">
           <div>
             <div class="card-title">Ranking y participación</div>
-            <div class="card-sub">% sobre el total del periodo filtrado</div>
+            <div class="card-sub">% individual y acumulado sobre el total del periodo</div>
           </div>
         </div>
         <div class="tbl-scroll" style="max-height:420px;">
@@ -736,6 +736,7 @@ body.printing .print-header .meta { font-size: 10pt; color: #64748b; margin-top:
               <th class="num">Kg</th>
               <th class="num">Und</th>
               <th class="num">%</th>
+              <th class="num">% Acum.</th>
             </tr></thead>
             <tbody></tbody>
           </table>
@@ -1600,10 +1601,14 @@ function renderDesperdicio() {
     .sort((a,b) => b.kg - a.kg);
   const total = agg.reduce((s,a)=>s+a.kg, 0);
   const isDay = STATE.wasteDim === 'day';
-  const dataForChart = isDay ? agg.slice().sort((a,b)=>a.key.localeCompare(b.key)) : agg.slice(0, 20);
-  const avg = dataForChart.length ? dataForChart.reduce((s,a)=>s+a.kg,0)/dataForChart.length : 0;
+
+  const sub = $('#wasteChartSub');
 
   if (isDay) {
+    // Día: serie temporal con promedio (no aplica Pareto)
+    if (sub) sub.textContent = 'Tendencia diaria · línea de promedio';
+    const dataForChart = agg.slice().sort((a,b)=>a.key.localeCompare(b.key));
+    const avg = dataForChart.length ? dataForChart.reduce((s,a)=>s+a.kg,0)/dataForChart.length : 0;
     renderChart('chartWaste', {
       ...CHART_BASE,
       tooltip: { ...TOOLTIP, trigger:'axis',
@@ -1624,46 +1629,70 @@ function renderDesperdicio() {
       }]
     });
   } else {
+    // Pareto: barras ordenadas + línea de % acumulado + marca 80/20
+    if (sub) sub.textContent = `Pareto · Top ${Math.min(agg.length, 20)} · barras (Kg) + % acumulado · línea 80/20`;
+    const top = agg.slice(0, 20);
+    let acc = 0;
+    const cum = top.map(a => { acc += a.kg; return total ? +(acc/total*100).toFixed(1) : 0; });
+
     renderChart('chartWaste', {
       ...CHART_BASE,
-      tooltip: { ...TOOLTIP, trigger:'axis', axisPointer:{type:'shadow'},
+      tooltip: { ...TOOLTIP, trigger:'axis', axisPointer:{ type:'shadow' },
         formatter: p => {
-          const item = dataForChart[dataForChart.length - 1 - p[0].dataIndex];
-          const pct = total ? (item.kg/total*100) : 0;
-          return `<div style="font-weight:600;">${escHtml(item.key)}</div>
-            <div style="margin-top:4px;">Desperdicio: <b>${fmtDec(item.kg)}</b> Kg</div>
-            <div style="opacity:.85;font-size:11px;">${fmtInt(item.und)} und · ${fmtPct(pct)} del total</div>`;
+          const bar  = p.find(x => x.seriesName === 'Desperdicio');
+          const line = p.find(x => x.seriesName === '% Acumulado');
+          const item = top[p[0].dataIndex];
+          const pctInd = (item && total) ? (item.kg/total*100) : 0;
+          return `<div style="font-weight:600;">${escHtml(item ? item.key : p[0].axisValue)}</div>`
+            + (bar  ? `<div style="margin-top:4px;">${bar.marker} Desperdicio: <b>${fmtDec(bar.value)}</b> Kg</div>` : '')
+            + (item ? `<div style="opacity:.8;font-size:11px;">${fmtInt(item.und)} und · <b>${fmtPct(pctInd)}</b> individual</div>` : '')
+            + (line ? `<div>${line.marker} Acumulado: <b>${fmtDec(line.value)}%</b></div>` : '');
         } },
-      grid: { ...CHART_BASE.grid, left: 16, right: 60 },
-      xAxis: { ...AXIS, type:'value', axisLabel:{ ...AXIS.axisLabel, formatter: v => fmtInt(v) } },
-      yAxis: { ...AXIS, type:'category',
-        data: dataForChart.map(a => truncate(a.key, 28)).reverse(),
-        axisLabel:{ ...AXIS.axisLabel, fontSize: 11 } },
-      series: [{ type:'bar',
-        data: dataForChart.map(a => +a.kg.toFixed(1)).reverse(),
-        itemStyle:{ color:'#b91c1c', borderRadius:[0,3,3,0] },
-        barMaxWidth: 22,
-        label: { show:true, position:'right', fontSize:10, color:'#475569',
-          formatter: p => fmtDec(p.value) },
-        markLine:{ silent:true, symbol:'none', data:[{ xAxis: avg,
-          label:{ formatter:'Prom. ' + fmtDec(avg), position:'insideEndTop', distance:4, color:'#475569', fontSize:10, fontWeight:600, backgroundColor:'#fff', padding:[2,6], borderRadius:3, borderColor:'#cbd5e1', borderWidth:1 },
-          lineStyle:{ color:'#94a3b8', type:'dashed', width:1 } }] }
-      }]
+      legend: { top: 0, left: 'center', textStyle:{ color:'#64748b', fontSize: 11 }, itemGap: 14,
+        icon: 'rect', itemWidth: 10, itemHeight: 10 },
+      grid: { ...CHART_BASE.grid, top: 38, bottom: 100 },
+      xAxis: { ...AXIS, type:'category', data: top.map(a => truncate(a.key, 22)),
+        axisLabel: { ...AXIS.axisLabel, rotate: 35, fontSize: 10, interval: 0 } },
+      yAxis: [
+        { ...AXIS, type:'value', name:'Kg', nameTextStyle:{ color:'#94a3b8', fontSize: 10 },
+          axisLabel: { ...AXIS.axisLabel, formatter: v => fmtDec(v) } },
+        { ...AXIS, type:'value', name:'% Acum.', nameTextStyle:{ color:'#94a3b8', fontSize: 10 },
+          min: 0, max: 100, splitLine: { show: false },
+          axisLabel: { ...AXIS.axisLabel, formatter: v => v + '%' } }
+      ],
+      series: [
+        { name:'Desperdicio', type:'bar', data: top.map(a => +a.kg.toFixed(1)),
+          itemStyle:{ color:'#b91c1c', borderRadius:[3,3,0,0] }, barMaxWidth: 30 },
+        { name:'% Acumulado', type:'line', yAxisIndex: 1, data: cum, smooth: true,
+          lineStyle:{ color:'#b45309', width: 2 }, itemStyle:{ color:'#b45309' },
+          symbol:'circle', symbolSize: 5,
+          markLine: { silent:true, symbol:'none', data:[{ yAxis: 80,
+            label:{ formatter:'80%', position:'insideEndTop', distance:4,
+                    color:'#b91c1c', fontSize:11, fontWeight:700,
+                    backgroundColor:'#fff', padding:[2,6], borderRadius:3,
+                    borderColor:'#b91c1c', borderWidth:1 },
+            lineStyle:{ color:'#b91c1c', type:'dashed', width:1 } }] }
+        }
+      ]
     });
   }
 
-  // Table
+  // Tabla: agregar columna % Acumulado
+  let accT = 0;
   const tb = $('#tblWaste tbody');
   tb.innerHTML = agg.map(a => {
     const pct = total ? (a.kg/total*100) : 0;
+    accT += a.kg;
+    const pctAcc = total ? (accT/total*100) : 0;
     const cls = pct>20 ? 'bad' : pct>10 ? 'warn' : '';
     return `<tr>
       <td>${escHtml(a.key)}</td>
       <td class="num">${fmtDec(a.kg)}</td>
       <td class="num">${fmtInt(a.und)}</td>
       <td class="num"><span class="pct-bar ${cls}"><i style="width:${Math.min(pct,100).toFixed(1)}%"></i></span>${fmtPct(pct)}</td>
+      <td class="num"><b>${fmtPct(pctAcc)}</b></td>
     </tr>`;
-  }).join('') || '<tr><td colspan="4" class="muted" style="text-align:center;padding:20px;">Sin datos</td></tr>';
+  }).join('') || '<tr><td colspan="5" class="muted" style="text-align:center;padding:20px;">Sin datos</td></tr>';
 }
 
 /* ===== PRODUCTIVIDAD ====================================================== */
