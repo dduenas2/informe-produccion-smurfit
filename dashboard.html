@@ -73,11 +73,7 @@ input, select { font: inherit; color: inherit; }
   gap: 24px;
 }
 .brand { display: flex; align-items: center; gap: 12px; }
-.brand-mark {
-  width: 36px; height: 36px;
-  background: var(--navy); border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-}
+.brand-logo { height: 40px; width: auto; display: block; }
 .brand-text .title { font-size: 15px; font-weight: 700; color: var(--ink-900); letter-spacing: -.01em; }
 .brand-text .sub   { font-size: 11px; color: var(--ink-500); letter-spacing: .6px; text-transform: uppercase; margin-top: 1px; }
 
@@ -322,6 +318,18 @@ main { padding: 32px 32px 80px; max-width: 1600px; margin: 0 auto; }
 .card-sub   { font-size: 12px; color: var(--ink-500); margin-top: 2px; }
 
 .row-2 { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: start; }
+.row-2 > .card { min-width: 0; }
+.row-2 > .card + .card, .row-2-even > .card + .card { margin-top: 0; }
+#wasteRateCard { margin-top: 20px; }
+
+/* Desperdicio: tarjetas alineadas en altura + tabla compacta */
+#panel-desperdicio .row-2 { align-items: stretch; }
+#panel-desperdicio .row-2 > .card { display: flex; flex-direction: column; }
+#panel-desperdicio .row-2 .tbl-scroll { flex: 1; min-height: 0; }
+#tblWaste { font-size: 10px; }
+#tblWaste thead th { padding: 6px 5px 5px; font-size: 8.5px; letter-spacing: .2px; }
+#tblWaste tbody td { padding: 4px 5px; }
+#tblWaste .pct-bar { width: 34px; margin-right: 4px; }
 .row-2-even { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 
 .chart { width: 100%; }
@@ -520,9 +528,7 @@ body.printing .print-header .meta { font-size: 10pt; color: #64748b; margin-top:
      ======================================================================== -->
 <header class="app-header">
   <div class="brand">
-    <div class="brand-mark">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17 L8 9 L12 13 L16 7 L21 17"/></svg>
-    </div>
+    <img class="brand-logo" src="Logos/Logo Odempa.png" alt="Odempa">
     <div class="brand-text">
       <div class="title">Informe de Producción</div>
       <div class="sub">Smurfit Westrock</div>
@@ -729,7 +735,7 @@ body.printing .print-header .meta { font-size: 10pt; color: #64748b; margin-top:
             <div class="card-sub">% individual y acumulado sobre el total del periodo</div>
           </div>
         </div>
-        <div class="tbl-scroll" style="max-height:420px;">
+        <div class="tbl-scroll">
           <table id="tblWaste">
             <thead><tr>
               <th>Dimensión</th>
@@ -742,6 +748,16 @@ body.printing .print-header .meta { font-size: 10pt; color: #64748b; margin-top:
           </table>
         </div>
       </div>
+    </div>
+
+    <div class="card" id="wasteRateCard" style="display:none;">
+      <div class="card-head">
+        <div>
+          <div class="card-title" id="wasteRateTitle">Desperdicio vs unidades fabricadas</div>
+          <div class="card-sub">Barras: unidades fabricadas · Línea: % desperdicio (und. desp / und. procesadas) · Punteada: promedio general</div>
+        </div>
+      </div>
+      <div class="chart h-420" id="chartWasteRate"></div>
     </div>
   </section>
 
@@ -798,6 +814,16 @@ body.printing .print-header .meta { font-size: 10pt; color: #64748b; margin-top:
           <tbody></tbody>
         </table>
       </div>
+    </div>
+
+    <div class="card" id="prodVelCard">
+      <div class="card-head">
+        <div>
+          <div class="card-title" id="prodVelTitle">Velocidad promedio por máquina</div>
+          <div class="card-sub">Und/min · promedio de registros con velocidad · línea punteada: promedio general</div>
+        </div>
+      </div>
+      <div class="chart h-420" id="chartProdVel"></div>
     </div>
   </section>
 
@@ -1589,14 +1615,16 @@ const WASTE_DIMS = {
   shift:     { title:'turno',      fn: r => r.Turno },
   machine:   { title:'máquina',    fn: r => r.Maquina },
   client:    { title:'cliente',    fn: r => r.Cliente },
-  material:  { title:'material',   fn: r => r.DescMaterial },
+  material:  { title:'material',   fn: r => r.DescMaterial === '—' ? '—'
+                 : r.DescMaterial + (r.Cliente !== '—' ? ' · ' + r.Cliente : '') },
   day:       { title:'día',        fn: r => r.FechaKey }
 };
 function renderDesperdicio() {
   const dim = WASTE_DIMS[STATE.wasteDim];
   $('#wasteChartTitle').textContent = 'Desperdicio por ' + dim.title;
 
-  const agg = groupAgg(STATE.filtered, dim.fn)
+  const base = groupAgg(STATE.filtered, dim.fn);
+  const agg = base
     .map(a => ({ key:a.key, kg:a.desp, und:a.despUnd }))
     .sort((a,b) => b.kg - a.kg);
   const total = agg.reduce((s,a)=>s+a.kg, 0);
@@ -1686,13 +1714,68 @@ function renderDesperdicio() {
     const pctAcc = total ? (accT/total*100) : 0;
     const cls = pct>20 ? 'bad' : pct>10 ? 'warn' : '';
     return `<tr>
-      <td>${escHtml(a.key)}</td>
+      <td title="${escHtml(a.key)}">${escHtml(truncate(a.key, 26))}</td>
       <td class="num">${fmtDec(a.kg)}</td>
       <td class="num">${fmtInt(a.und)}</td>
       <td class="num"><span class="pct-bar ${cls}"><i style="width:${Math.min(pct,100).toFixed(1)}%"></i></span>${fmtPct(pct)}</td>
       <td class="num"><b>${fmtPct(pctAcc)}</b></td>
     </tr>`;
   }).join('') || '<tr><td colspan="5" class="muted" style="text-align:center;padding:20px;">Sin datos</td></tr>';
+
+  // Desperdicio vs unidades fabricadas — solo operario, supervisor, cliente, material
+  const rateCard = $('#wasteRateCard');
+  if (!['operator','supervisor','client','material'].includes(STATE.wasteDim)) {
+    rateCard.style.display = 'none';
+    return;
+  }
+  rateCard.style.display = '';
+  $('#wasteRateTitle').textContent = 'Desperdicio vs unidades fabricadas por ' + dim.title;
+
+  const rRows = base.filter(a => (a.ctd + a.despUnd) > 0).sort((a,b) => b.ctd - a.ctd).slice(0, 20);
+  const rRates = rRows.map(a => +((a.despUnd/(a.ctd + a.despUnd))*100).toFixed(2));
+  const totCtd = base.reduce((s,a) => s + a.ctd, 0);
+  const totDU  = base.reduce((s,a) => s + a.despUnd, 0);
+  const avgRate = (totCtd + totDU) ? +((totDU/(totCtd + totDU))*100).toFixed(2) : 0;
+
+  renderChart('chartWasteRate', {
+    ...CHART_BASE,
+    tooltip: { ...TOOLTIP, trigger:'axis', axisPointer:{ type:'shadow' },
+      formatter: p => {
+        const item = rRows[p[0].dataIndex];
+        if (!item) return '';
+        const rate = rRates[p[0].dataIndex];
+        return `<div style="font-weight:600;">${escHtml(item.key)}</div>`
+          + `<div style="margin-top:4px;">Fabricadas: <b>${fmtInt(item.ctd)}</b> und</div>`
+          + `<div>Desperdicio: <b>${fmtInt(item.despUnd)}</b> und · ${fmtDec(item.desp)} Kg</div>`
+          + `<div>% Desperdicio: <b>${fmtPct(rate)}</b> <span style="opacity:.7">(prom. ${fmtPct(avgRate)})</span></div>`;
+      } },
+    legend: { top: 0, left: 'center', textStyle:{ color:'#64748b', fontSize: 11 }, itemGap: 14,
+      icon: 'rect', itemWidth: 10, itemHeight: 10 },
+    grid: { ...CHART_BASE.grid, top: 38, bottom: 100 },
+    xAxis: { ...AXIS, type:'category', data: rRows.map(a => truncate(a.key, 22)),
+      axisLabel: { ...AXIS.axisLabel, rotate: 35, fontSize: 10, interval: 0 } },
+    yAxis: [
+      { ...AXIS, type:'value', name:'Und fabricadas', nameTextStyle:{ color:'#94a3b8', fontSize: 10 },
+        axisLabel: { ...AXIS.axisLabel, formatter: v => fmtInt(v) } },
+      { ...AXIS, type:'value', name:'% Desp.', nameTextStyle:{ color:'#94a3b8', fontSize: 10 },
+        splitLine: { show: false },
+        axisLabel: { ...AXIS.axisLabel, formatter: v => v + '%' } }
+    ],
+    series: [
+      { name:'Und fabricadas', type:'bar', data: rRows.map(a => a.ctd),
+        itemStyle:{ color:'#0a4d8c', borderRadius:[3,3,0,0] }, barMaxWidth: 30 },
+      { name:'% Desperdicio', type:'line', yAxisIndex: 1, data: rRates, smooth: true,
+        lineStyle:{ color:'#b91c1c', width: 2 }, itemStyle:{ color:'#b91c1c' },
+        symbol:'circle', symbolSize: 6,
+        markLine: { silent:true, symbol:'none', data:[{ yAxis: avgRate,
+          label:{ formatter:'Prom. ' + fmtPct(avgRate), position:'insideEndTop', distance:4,
+                  color:'#b91c1c', fontSize:10, fontWeight:600,
+                  backgroundColor:'#fff', padding:[2,6], borderRadius:3,
+                  borderColor:'#b91c1c', borderWidth:1 },
+          lineStyle:{ color:'#b91c1c', type:'dashed', width:1 } }] }
+      }
+    ]
+  });
 }
 
 /* ===== PRODUCTIVIDAD ====================================================== */
@@ -1786,6 +1869,32 @@ function renderProductividad() {
       <td class="num">${fmtDec(a.desp)}</td>
     </tr>`;
   }).join('') || '<tr><td colspan="11" class="muted" style="text-align:center;padding:20px;">Sin datos</td></tr>';
+
+  // Velocidad promedio — solo para máquina
+  const velCard = $('#prodVelCard');
+  if (STATE.prodDim !== 'machine') { velCard.style.display = 'none'; return; }
+  velCard.style.display = '';
+  const velArr = agg.filter(a => a.velN > 0).sort((a,b) => b.velAvg - a.velAvg).slice(0, 15);
+  renderChart('chartProdVel', {
+    ...CHART_BASE,
+    tooltip: { ...TOOLTIP, trigger:'axis', axisPointer:{ type:'shadow' },
+      formatter: p => `<div style="font-weight:600;">${p[0].axisValue}</div>`
+        + `<div>${p[0].marker} Velocidad: <b>${fmtDec(p[0].value)}</b> und/min</div>` },
+    grid: { ...CHART_BASE.grid, top: 24, left: 16, right: 60 },
+    xAxis: { ...AXIS, type:'value', name:'Und/min', nameTextStyle:{ color:'#94a3b8', fontSize: 10 } },
+    yAxis: { ...AXIS, type:'category', data: velArr.map(a => truncate(a.key, 26)).reverse(),
+      axisLabel:{ ...AXIS.axisLabel, fontSize: 11 } },
+    series: [
+      { name:'Velocidad', type:'bar', data: velArr.map(a => +a.velAvg.toFixed(1)).reverse(),
+        itemStyle:{ color:'#0a4d8c' }, barMaxWidth: 22,
+        label: { show:true, position:'right', color:'#64748b', fontSize: 10, formatter: p => fmtDec(p.value) },
+        markLine: { symbol:'none', silent:true,
+          lineStyle:{ color:'#b91c1c', type:'dashed', width: 1 },
+          label:{ formatter:'Prom. ' + fmtDec(velAvg), color:'#b91c1c', fontSize: 10 },
+          data: [{ xAxis: +velAvg.toFixed(1) }] }
+      }
+    ]
+  });
 }
 
 /* ===== PAROS ============================================================== */
