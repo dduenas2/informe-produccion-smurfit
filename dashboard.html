@@ -301,6 +301,30 @@ main { padding: 32px 32px 80px; max-width: 1600px; margin: 0 auto; }
 .type-card.is-final .t-meta strong { color: var(--ok); }
 @media (max-width: 900px) { .type-strip { grid-template-columns: 1fr; } }
 
+/* Fondeadora detail group — desglose del consolidado */
+.fondo-detail {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: var(--radius);
+  padding: 12px 14px 0;
+  margin-bottom: 24px;
+}
+.fondo-detail .fd-title {
+  font-size: 10.5px; letter-spacing: .8px; text-transform: uppercase;
+  color: var(--ink-500); font-weight: 700; margin-bottom: 10px;
+}
+.fondo-detail .type-strip { margin-bottom: 14px; }
+.type-card .t-pill.ok { background: var(--ok); }
+
+/* Variante sobria para el desglose — se distingue de la franja principal */
+.type-card.sub {
+  background: #fff;
+  border: 1px solid var(--ink-200);
+}
+.type-card.sub .t-name { color: var(--ink-500); }
+.type-card.sub .t-value { font-size: 20px; }
+.type-card.sub .t-meta strong { color: var(--ink-900); }
+
 /* Cards and layout */
 .card {
   background: #fff;
@@ -531,7 +555,6 @@ body.printing .print-header .meta { font-size: 10pt; color: #64748b; margin-top:
     <img class="brand-logo" src="Logos/Logo Odempa.png" alt="Odempa">
     <div class="brand-text">
       <div class="title">Informe de Producción</div>
-      <div class="sub">Smurfit Westrock</div>
     </div>
   </div>
 
@@ -654,6 +677,11 @@ body.printing .print-header .meta { font-size: 10pt; color: #64748b; margin-top:
 
     <div class="type-strip" id="typeStrip"></div>
 
+    <div class="fondo-detail" id="fondoDetail">
+      <div class="fd-title">Detalle por fondeadora · producto terminado</div>
+      <div class="type-strip" id="fondoStrip"></div>
+    </div>
+
     <div class="card">
       <div class="card-head">
         <div>
@@ -723,7 +751,7 @@ body.printing .print-header .meta { font-size: 10pt; color: #64748b; margin-top:
         <div class="card-head">
           <div>
             <div class="card-title" id="wasteChartTitle">Desperdicio por operario</div>
-            <div class="card-sub" id="wasteChartSub">Pareto · Top 20 · barras (Kg) + % acumulado · línea 80/20</div>
+            <div class="card-sub" id="wasteChartSub">Pareto · Top 20 · barras: % desperdicio · línea: % acumulado · 80/20</div>
           </div>
         </div>
         <div class="chart h-420" id="chartWaste"></div>
@@ -732,7 +760,7 @@ body.printing .print-header .meta { font-size: 10pt; color: #64748b; margin-top:
         <div class="card-head">
           <div>
             <div class="card-title">Ranking y participación</div>
-            <div class="card-sub">% individual y acumulado sobre el total del periodo</div>
+            <div class="card-sub">% desperdicio individual (und. desp / und. fabricadas) y acumulado sobre el desperdicio total</div>
           </div>
         </div>
         <div class="tbl-scroll">
@@ -741,7 +769,7 @@ body.printing .print-header .meta { font-size: 10pt; color: #64748b; margin-top:
               <th>Dimensión</th>
               <th class="num">Kg</th>
               <th class="num">Und</th>
-              <th class="num">%</th>
+              <th class="num">% Desp.</th>
               <th class="num">% Acum.</th>
             </tr></thead>
             <tbody></tbody>
@@ -750,11 +778,31 @@ body.printing .print-header .meta { font-size: 10pt; color: #64748b; margin-top:
       </div>
     </div>
 
+    <div class="card" id="wasteOpRankCard">
+      <div class="card-head">
+        <div>
+          <div class="card-title" id="wasteRankTitle">% de desperdicio por operario</div>
+          <div class="card-sub">Treemap · tamaño: % desperdicio (und. desp / und. fabricadas) · verde: bajo el promedio · ámbar/rojo: sobre el promedio · sigue la dimensión seleccionada arriba</div>
+        </div>
+      </div>
+      <div class="chart h-420" id="chartWasteOpRank"></div>
+    </div>
+
+    <div class="card" id="wasteHistCard">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Evolución mensual · % Desperdicio</div>
+          <div class="card-sub">Histórico completo (ignora el filtro de fechas) · barras: % desperdicio (und. desp / und. fabricadas de cada mes) · línea punteada: tendencia</div>
+        </div>
+      </div>
+      <div class="chart h-420" id="chartWasteHist"></div>
+    </div>
+
     <div class="card" id="wasteRateCard" style="display:none;">
       <div class="card-head">
         <div>
           <div class="card-title" id="wasteRateTitle">Desperdicio vs unidades fabricadas</div>
-          <div class="card-sub">Barras: unidades fabricadas · Línea: % desperdicio (und. desp / und. procesadas) · Punteada: promedio general</div>
+          <div class="card-sub">Cada punto es un elemento · X: unidades fabricadas · Y: % desperdicio · tamaño: Kg desperdiciados · líneas punteadas: promedios (cuadrante superior-derecho = alto volumen y alta tasa, prioridad)</div>
         </div>
       </div>
       <div class="chart h-420" id="chartWasteRate"></div>
@@ -774,12 +822,23 @@ body.printing .print-header .meta { font-size: 10pt; color: #64748b; margin-top:
         <button class="subtab" data-dim="operator">Operario</button>
         <button class="subtab" data-dim="supervisor">Supervisor</button>
         <button class="subtab" data-dim="client">Cliente</button>
+        <button class="subtab" data-dim="month">Mes a mes</button>
       </div>
     </div>
 
     <div class="kpi-row" id="prodKpiRow"></div>
 
-    <div class="card">
+    <div class="card" id="prodMonthCard" style="display:none;">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Producción mes a mes · Fondeadoras</div>
+          <div class="card-sub">Producto terminado (solo fondeadoras) · histórico completo (ignora el filtro de fechas) · barras: unidades producidas por mes · línea punteada: tendencia</div>
+        </div>
+      </div>
+      <div class="chart h-420" id="chartProdMonth"></div>
+    </div>
+
+    <div class="card" id="prodDistCard">
       <div class="card-head">
         <div>
           <div class="card-title" id="prodChartTitle">Distribución de tiempo por máquina</div>
@@ -789,7 +848,7 @@ body.printing .print-header .meta { font-size: 10pt; color: #64748b; margin-top:
       <div class="chart h-420" id="chartProd"></div>
     </div>
 
-    <div class="card">
+    <div class="card" id="prodTableCard">
       <div class="card-head">
         <div>
           <div class="card-title" id="prodTableTitle">Indicadores por máquina</div>
@@ -825,20 +884,50 @@ body.printing .print-header .meta { font-size: 10pt; color: #64748b; margin-top:
       </div>
       <div class="chart h-420" id="chartProdVel"></div>
     </div>
+
+    <div class="card" id="prodVelHistCard">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Evolución mensual · Velocidad promedio</div>
+          <div class="card-sub">Histórico completo (ignora el filtro de fechas) · barras: velocidad promedio (und/min) · línea punteada: tendencia</div>
+        </div>
+      </div>
+      <div class="chart h-420" id="chartProdVelHist"></div>
+    </div>
   </section>
 
   <!-- ===== PAROS ===== -->
   <section class="tab-panel" id="panel-paros" style="display:none;">
     <div class="page-head">
-      <div class="page-title">Pareto de paros</div>
-      <div class="page-sub">Causas de parada ordenadas por impacto acumulado en minutos. Línea roja: umbral 80%.</div>
+      <div class="page-title">Paros y cuadres</div>
+      <div class="page-sub">Evolución mensual de paros y cuadres, y Pareto de causas de parada por impacto acumulado.</div>
     </div>
 
     <div class="card">
       <div class="card-head">
         <div>
-          <div class="card-title">Top 20 causas por minutos de paro</div>
-          <div class="card-sub">Barras: minutos · Línea: % acumulado</div>
+          <div class="card-title">Paradas de máquina mes a mes</div>
+          <div class="card-sub">Histórico completo (ignora el filtro de fechas) · barras: horas de paro por mes · línea punteada: tendencia</div>
+        </div>
+      </div>
+      <div class="chart h-420" id="chartParosMes"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Cuadres de máquina mes a mes</div>
+          <div class="card-sub">Histórico completo (ignora el filtro de fechas) · barras: horas de cuadre por mes (T Cuadre) · línea punteada: tendencia</div>
+        </div>
+      </div>
+      <div class="chart h-420" id="chartCuadresMes"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Pareto de paros · Top 20 causas por minutos</div>
+          <div class="card-sub">Barras: minutos · Línea: % acumulado · Línea roja: umbral 80%</div>
         </div>
       </div>
       <div class="chart h-420" id="chartPareto"></div>
@@ -1016,6 +1105,12 @@ function weekKey(d) {
   const yearStart = new Date(Date.UTC(t.getUTCFullYear(),0,1));
   const weekNo = Math.ceil((((t - yearStart)/86400000) + 1)/7);
   return t.getUTCFullYear()+'-W'+String(weekNo).padStart(2,'0');
+}
+const MES_ABR = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+function monthLabel(k) {
+  // "2026-09" → "Sep 2026"
+  const [y, m] = String(k).split('-');
+  return (MES_ABR[+m - 1] || m) + ' ' + y;
 }
 function monthKey(d) {
   if (!d) return '';
@@ -1449,8 +1544,8 @@ function renderResumen() {
     if (isFondeadora(r)) { ctdFondo += r.Ctd; despFondoUnd += r.DespUnd; nFondo++; }
   }
   const velAvg = velN ? velSum/velN : 0;
-  // % desperdicio total: unidades de desperdicio / total procesado (todos los procesos)
-  const wastePct = (ctd+despUnd) ? (despUnd/(ctd+despUnd))*100 : 0;
+  // % desperdicio total: unidades de desperdicio / unidades fabricadas (todos los procesos)
+  const wastePct = ctd ? (despUnd/ctd)*100 : 0;
   const corrPct  = tInv ? (tCorr/tInv)*100 : 0;
   const parosPct = tInv ? (tParos/tInv)*100 : 0;
 
@@ -1459,7 +1554,7 @@ function renderResumen() {
     { label: 'Producto terminado', value: fmtInt(ctdFondo), unit: 'und',
       foot: `solo <strong>fondeadoras</strong> · ${fmtInt(nFondo)} registros` },
     { label: 'Desperdicio total', value: fmtDec(desp), unit: 'Kg',
-      foot: `<strong>${fmtInt(despUnd)}</strong> und equivalentes · <strong>${fmtPct(wastePct)}</strong> del total procesado`,
+      foot: `<strong>${fmtInt(despUnd)}</strong> und equivalentes · <strong>${fmtPct(wastePct)}</strong> sobre und. fabricadas`,
       cls: wastePct>3 ? 'accent-bad' : wastePct>1.5 ? 'accent-warn' : 'accent-ok' },
     { label: '% Corrida efectiva', value: fmtPct(corrPct), unit: '',
       foot: `Paros: <strong>${fmtPct(parosPct)}</strong> · <strong>${fmtDec(tParos/60)}</strong> h perdidas`,
@@ -1482,9 +1577,9 @@ function renderResumen() {
   $('#typeStrip').innerHTML = [...typeAgg.entries()]
     .filter(([, a]) => a.n > 0)
     .map(([name, a]) => {
-      const pct = (a.ctd+a.despUnd) ? (a.despUnd/(a.ctd+a.despUnd))*100 : 0;
+      const pct = a.ctd ? (a.despUnd/a.ctd)*100 : 0;
       const isFinal = /fondead/i.test(name);
-      return `<div class="type-card ${isFinal?'is-final':''}">
+      return `<div class="type-card">
         <div class="t-head">
           <span class="t-name">${escHtml(name)}</span>
           ${isFinal ? '<span class="t-pill">producto terminado</span>' : ''}
@@ -1492,6 +1587,36 @@ function renderResumen() {
         <div class="t-value">${fmtInt(a.ctd)}<span class="t-unit">und</span></div>
         <div class="t-meta">
           Desperdicio: <strong>${fmtDec(a.desp)}</strong> Kg · <strong>${fmtInt(a.despUnd)}</strong> und · <strong>${fmtPct(pct)}</strong>
+        </div>
+      </div>`;
+    }).join('');
+
+  // Detalle por fondeadora — lo fondeado es el producto terminado
+  const fondoAgg = new Map();
+  for (const r of d) {
+    if (!isFondeadora(r) || r.Maquina === '—') continue;
+    let a = fondoAgg.get(r.Maquina);
+    if (!a) { a = { ctd:0, desp:0, despUnd:0, n:0 }; fondoAgg.set(r.Maquina, a); }
+    a.ctd += r.Ctd; a.desp += r.DespKg; a.despUnd += r.DespUnd; a.n++;
+  }
+  const FONDO_ORDER = ['2377', '2360-1', '2360-2'];
+  const fondoPos = name => {
+    const i = FONDO_ORDER.findIndex(k => String(name).includes(k));
+    return i === -1 ? FONDO_ORDER.length : i;
+  };
+  $('#fondoDetail').style.display = fondoAgg.size ? '' : 'none';
+  $('#fondoStrip').innerHTML = [...fondoAgg.entries()]
+    .sort((a,b) => fondoPos(a[0]) - fondoPos(b[0]))
+    .map(([name, a]) => {
+      const pct = a.ctd ? (a.despUnd/a.ctd)*100 : 0;
+      return `<div class="type-card sub">
+        <div class="t-head">
+          <span class="t-name">FONDEADORA - ${escHtml(name)}</span>
+          <span class="t-pill ok">producto terminado</span>
+        </div>
+        <div class="t-value">${fmtInt(a.ctd)}<span class="t-unit">und</span></div>
+        <div class="t-meta">
+          Desperdicio: <strong>${fmtDec(a.desp)}</strong> Kg · <strong>${fmtInt(a.despUnd)}</strong> und · <strong>${fmtPct(pct)}</strong> · ${fmtInt(a.n)} registros
         </div>
       </div>`;
     }).join('');
@@ -1624,10 +1749,13 @@ function renderDesperdicio() {
   $('#wasteChartTitle').textContent = 'Desperdicio por ' + dim.title;
 
   const base = groupAgg(STATE.filtered, dim.fn);
+  const totCtdAll = base.reduce((s,a)=>s+a.ctd, 0);
+  const totUndAll = base.reduce((s,a)=>s+a.despUnd, 0);
+  const avgRateAll = totCtdAll ? +((totUndAll/totCtdAll)*100).toFixed(2) : 0;
   const agg = base
-    .map(a => ({ key:a.key, kg:a.desp, und:a.despUnd }))
-    .sort((a,b) => b.kg - a.kg);
-  const total = agg.reduce((s,a)=>s+a.kg, 0);
+    .map(a => ({ key:a.key, kg:a.desp, und:a.despUnd, ctd:a.ctd,
+                 rate: a.ctd ? +((a.despUnd/a.ctd)*100).toFixed(2) : 0 }))
+    .sort((a,b) => b.rate - a.rate);
   const isDay = STATE.wasteDim === 'day';
 
   const sub = $('#wasteChartSub');
@@ -1657,24 +1785,23 @@ function renderDesperdicio() {
       }]
     });
   } else {
-    // Pareto: barras ordenadas + línea de % acumulado + marca 80/20
-    if (sub) sub.textContent = `Pareto · Top ${Math.min(agg.length, 20)} · barras (Kg) + % acumulado · línea 80/20`;
+    // Pareto por tasa: barras = % desperdicio (und) + línea de % acumulado del desperdicio total
+    if (sub) sub.textContent = `Pareto · Top ${Math.min(agg.length, 20)} · barras: % desperdicio (und. desp / und. fabricadas) · línea: % acumulado del desperdicio total · 80/20`;
     const top = agg.slice(0, 20);
     let acc = 0;
-    const cum = top.map(a => { acc += a.kg; return total ? +(acc/total*100).toFixed(1) : 0; });
+    const cum = top.map(a => { acc += a.und; return totUndAll ? +(acc/totUndAll*100).toFixed(1) : 0; });
 
     renderChart('chartWaste', {
       ...CHART_BASE,
       tooltip: { ...TOOLTIP, trigger:'axis', axisPointer:{ type:'shadow' },
         formatter: p => {
-          const bar  = p.find(x => x.seriesName === 'Desperdicio');
           const line = p.find(x => x.seriesName === '% Acumulado');
           const item = top[p[0].dataIndex];
-          const pctInd = (item && total) ? (item.kg/total*100) : 0;
-          return `<div style="font-weight:600;">${escHtml(item ? item.key : p[0].axisValue)}</div>`
-            + (bar  ? `<div style="margin-top:4px;">${bar.marker} Desperdicio: <b>${fmtDec(bar.value)}</b> Kg</div>` : '')
-            + (item ? `<div style="opacity:.8;font-size:11px;">${fmtInt(item.und)} und · <b>${fmtPct(pctInd)}</b> individual</div>` : '')
-            + (line ? `<div>${line.marker} Acumulado: <b>${fmtDec(line.value)}%</b></div>` : '');
+          if (!item) return '';
+          return `<div style="font-weight:600;">${escHtml(item.key)}</div>`
+            + `<div style="margin-top:4px;">% Desperdicio: <b>${fmtPct(item.rate)}</b> <span style="opacity:.7">(prom. ${fmtPct(avgRateAll)})</span></div>`
+            + `<div style="opacity:.8;font-size:11px;">Fabricadas: ${fmtInt(item.ctd)} und · Desp: ${fmtInt(item.und)} und · ${fmtDec(item.kg)} Kg</div>`
+            + (line ? `<div>${line.marker} Acumulado del desp. total: <b>${fmtDec(line.value)}%</b></div>` : '');
         } },
       legend: { top: 0, left: 'center', textStyle:{ color:'#64748b', fontSize: 11 }, itemGap: 14,
         icon: 'rect', itemWidth: 10, itemHeight: 10 },
@@ -1682,15 +1809,25 @@ function renderDesperdicio() {
       xAxis: { ...AXIS, type:'category', data: top.map(a => truncate(a.key, 22)),
         axisLabel: { ...AXIS.axisLabel, rotate: 35, fontSize: 10, interval: 0 } },
       yAxis: [
-        { ...AXIS, type:'value', name:'Kg', nameTextStyle:{ color:'#94a3b8', fontSize: 10 },
-          axisLabel: { ...AXIS.axisLabel, formatter: v => fmtDec(v) } },
+        { ...AXIS, type:'value', name:'% Desp.', nameTextStyle:{ color:'#94a3b8', fontSize: 10 },
+          axisLabel: { ...AXIS.axisLabel, formatter: v => v + '%' } },
         { ...AXIS, type:'value', name:'% Acum.', nameTextStyle:{ color:'#94a3b8', fontSize: 10 },
           min: 0, max: 100, splitLine: { show: false },
           axisLabel: { ...AXIS.axisLabel, formatter: v => v + '%' } }
       ],
       series: [
-        { name:'Desperdicio', type:'bar', data: top.map(a => +a.kg.toFixed(1)),
-          itemStyle:{ color:'#b91c1c', borderRadius:[3,3,0,0] }, barMaxWidth: 30 },
+        { name:'% Desperdicio', type:'bar',
+          data: top.map(a => ({ value: a.rate,
+            itemStyle: { color: a.rate <= avgRateAll ? '#15803d'
+                              : a.rate <= avgRateAll*1.5 ? '#b45309' : '#b91c1c',
+                         borderRadius:[3,3,0,0] } })),
+          barMaxWidth: 30,
+          markLine: { silent:true, symbol:'none', data:[{ yAxis: avgRateAll,
+            label:{ formatter:'Prom. ' + fmtPct(avgRateAll), position:'insideEndTop', distance:4,
+                    color:'#475569', fontSize:10, fontWeight:600,
+                    backgroundColor:'#fff', padding:[2,6], borderRadius:3,
+                    borderColor:'#cbd5e1', borderWidth:1 },
+            lineStyle:{ color:'#94a3b8', type:'dashed', width:1 } }] } },
         { name:'% Acumulado', type:'line', yAxisIndex: 1, data: cum, smooth: true,
           lineStyle:{ color:'#b45309', width: 2 }, itemStyle:{ color:'#b45309' },
           symbol:'circle', symbolSize: 5,
@@ -1705,22 +1842,124 @@ function renderDesperdicio() {
     });
   }
 
-  // Tabla: agregar columna % Acumulado
+  // Tabla: % desperdicio individual + % acumulado del desperdicio total
+  const maxRate = Math.max(...agg.map(a => a.rate), 0.001);
   let accT = 0;
   const tb = $('#tblWaste tbody');
   tb.innerHTML = agg.map(a => {
-    const pct = total ? (a.kg/total*100) : 0;
-    accT += a.kg;
-    const pctAcc = total ? (accT/total*100) : 0;
-    const cls = pct>20 ? 'bad' : pct>10 ? 'warn' : '';
+    accT += a.und;
+    const pctAcc = totUndAll ? (accT/totUndAll*100) : 0;
+    const cls = a.rate > avgRateAll*1.5 ? 'bad' : a.rate > avgRateAll ? 'warn' : '';
     return `<tr>
       <td title="${escHtml(a.key)}">${escHtml(truncate(a.key, 26))}</td>
       <td class="num">${fmtDec(a.kg)}</td>
       <td class="num">${fmtInt(a.und)}</td>
-      <td class="num"><span class="pct-bar ${cls}"><i style="width:${Math.min(pct,100).toFixed(1)}%"></i></span>${fmtPct(pct)}</td>
+      <td class="num"><span class="pct-bar ${cls}"><i style="width:${(a.rate/maxRate*100).toFixed(1)}%"></i></span>${fmtPct(a.rate)}</td>
       <td class="num"><b>${fmtPct(pctAcc)}</b></td>
     </tr>`;
   }).join('') || '<tr><td colspan="5" class="muted" style="text-align:center;padding:20px;">Sin datos</td></tr>';
+
+  // Treemap % desperdicio — dinámico según la dimensión activa
+  $('#wasteRankTitle').textContent = '% de desperdicio por ' + dim.title;
+  const opAgg = groupAgg(STATE.filtered, dim.fn).filter(a => a.ctd > 0);
+  const opTotCtd = opAgg.reduce((s,a) => s + a.ctd, 0);
+  const opTotDU  = opAgg.reduce((s,a) => s + a.despUnd, 0);
+  const opAvg = opTotCtd ? +((opTotDU/opTotCtd)*100).toFixed(2) : 0;
+  const opRows = opAgg
+    .map(a => ({ key:a.key, ctd:a.ctd, despUnd:a.despUnd, kg:a.desp,
+                 rate: +((a.despUnd/a.ctd)*100).toFixed(2) }))
+    .sort((a,b) => b.rate - a.rate);
+  renderChart('chartWasteOpRank', {
+    ...CHART_BASE,
+    tooltip: { ...TOOLTIP,
+      formatter: p => {
+        const it = p.data;
+        if (!it || it.rate == null) return '';
+        return `<div style="font-weight:600;">${escHtml(it.name)}</div>`
+          + `<div style="margin-top:4px;">% Desperdicio: <b>${fmtPct(it.rate)}</b> <span style="opacity:.7">(prom. ${fmtPct(opAvg)})</span></div>`
+          + `<div>Fabricadas: <b>${fmtInt(it.ctd)}</b> und</div>`
+          + `<div>Desperdicio: <b>${fmtInt(it.despUnd)}</b> und · ${fmtDec(it.kg)} Kg</div>`;
+      } },
+    series: [
+      { type:'treemap', roam:false, nodeClick:false,
+        breadcrumb: { show:false },
+        width:'100%', height:'100%', top:0, left:0,
+        data: opRows.map(a => ({
+          name: a.key, value: a.rate,
+          rate: a.rate, ctd: a.ctd, despUnd: a.despUnd, kg: a.kg,
+          itemStyle: { color: a.rate <= opAvg ? '#15803d'
+                            : a.rate <= opAvg*1.5 ? '#b45309' : '#b91c1c' }
+        })),
+        label: { show:true, fontSize: 11, color:'#fff',
+          formatter: p => `${truncate(p.name, 18)}\n${fmtPct(p.data.rate)}` },
+        itemStyle: { borderColor:'#fff', borderWidth: 2, gapWidth: 2 },
+        emphasis: { label: { fontWeight: 600 } }
+      }
+    ]
+  });
+
+  // Evolución mensual del desperdicio — solo en la dimensión Día
+  const histCard = $('#wasteHistCard');
+  histCard.style.display = isDay ? '' : 'none';
+  if (isDay) {
+  const wf = STATE.filters;
+  const wHistRows = STATE.raw.filter(r => {
+    if (wf.machine.size     && !wf.machine.has(r.Maquina))      return false;
+    if (wf.shift.size       && !wf.shift.has(r.Turno))          return false;
+    if (wf.machineType.size && !wf.machineType.has(r.TipoMaq))  return false;
+    if (wf.supervisor.size  && !wf.supervisor.has(r.Supervisor))return false;
+    if (wf.operator.size    && !wf.operator.has(r.Operario))    return false;
+    if (wf.client.size      && !wf.client.has(r.Cliente))       return false;
+    return true;
+  });
+  const wMonths = new Map();
+  for (const r of wHistRows) {
+    let a = wMonths.get(r.MonthKey);
+    if (!a) { a = { kg:0, und:0, ctd:0 }; wMonths.set(r.MonthKey, a); }
+    a.kg += r.DespKg; a.und += r.DespUnd; a.ctd += r.Ctd;
+  }
+  const wm = [...wMonths.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
+  const wmRates = wm.map(r => r[1].ctd ? +((r[1].und/r[1].ctd)*100).toFixed(2) : null);
+
+  // Tendencia: regresión lineal sobre los meses con dato
+  const wPts = wmRates.map((v,i) => [i,v]).filter(p => p[1] != null);
+  let wTrend = wm.map(() => null);
+  if (wPts.length >= 2) {
+    const n = wPts.length;
+    const sx = wPts.reduce((s,p)=>s+p[0],0), sy = wPts.reduce((s,p)=>s+p[1],0);
+    const sxx = wPts.reduce((s,p)=>s+p[0]*p[0],0), sxy = wPts.reduce((s,p)=>s+p[0]*p[1],0);
+    const slope = (n*sxy - sx*sy) / (n*sxx - sx*sx || 1);
+    const icept = (sy - slope*sx) / n;
+    wTrend = wm.map((_,i) => +(icept + slope*i).toFixed(2));
+  }
+
+  renderChart('chartWasteHist', {
+    ...CHART_BASE,
+    tooltip: { ...TOOLTIP, trigger:'axis', axisPointer:{ type:'shadow' },
+      formatter: p => {
+        const i = p[0].dataIndex;
+        return `<div style="font-weight:600;">${p[0].axisValue}</div>`
+          + `<div>${p[0].marker} % Desperdicio: <b>${wmRates[i]==null?'—':fmtPct(wmRates[i])}</b></div>`
+          + (wTrend[i]!=null ? `<div style="opacity:.75;">Tendencia: ${fmtPct(wTrend[i])}</div>` : '')
+          + `<div style="opacity:.75;">Desperdicio: ${fmtInt(wm[i][1].und)} und · ${fmtDec(wm[i][1].kg)} Kg</div>`
+          + `<div style="opacity:.75;">Fabricadas: ${fmtInt(wm[i][1].ctd)} und</div>`;
+      } },
+    legend: { top: 0, left: 'center', textStyle:{ color:'#64748b', fontSize: 11 }, itemGap: 14,
+      icon:'rect', itemWidth:10, itemHeight:10 },
+    grid: { ...CHART_BASE.grid, top: 36 },
+    xAxis: { ...AXIS, type:'category', data: wm.map(r=>monthLabel(r[0])) },
+    yAxis: { ...AXIS, type:'value', name:'% Desp.', nameTextStyle:{color:'#94a3b8', fontSize:10},
+      axisLabel:{ ...AXIS.axisLabel, formatter: v => v + '%' } },
+    series: [
+      { name:'% Desperdicio', type:'bar', data: wmRates,
+        itemStyle:{ color:'#b91c1c', borderRadius:[3,3,0,0] }, barMaxWidth: 34,
+        label: { show:true, position:'top', color:'#b91c1c', fontSize: 10,
+          formatter: p => p.value==null?'':fmtPct(p.value) } },
+      { name:'Tendencia', type:'line', data: wTrend, smooth:false, symbol:'none',
+        lineStyle:{ color:'#b45309', width:2, type:'dashed' }, itemStyle:{ color:'#b45309' } }
+    ]
+  });
+  }
 
   // Desperdicio vs unidades fabricadas — solo operario, supervisor, cliente, material
   const rateCard = $('#wasteRateCard');
@@ -1731,48 +1970,54 @@ function renderDesperdicio() {
   rateCard.style.display = '';
   $('#wasteRateTitle').textContent = 'Desperdicio vs unidades fabricadas por ' + dim.title;
 
-  const rRows = base.filter(a => (a.ctd + a.despUnd) > 0).sort((a,b) => b.ctd - a.ctd).slice(0, 20);
-  const rRates = rRows.map(a => +((a.despUnd/(a.ctd + a.despUnd))*100).toFixed(2));
+  // Dispersión: X = und fabricadas · Y = % desperdicio · tamaño = Kg desperdiciados
+  const rRows = base.filter(a => a.ctd > 0).sort((a,b) => b.ctd - a.ctd).slice(0, 40);
   const totCtd = base.reduce((s,a) => s + a.ctd, 0);
   const totDU  = base.reduce((s,a) => s + a.despUnd, 0);
-  const avgRate = (totCtd + totDU) ? +((totDU/(totCtd + totDU))*100).toFixed(2) : 0;
+  const avgRate = totCtd ? +((totDU/totCtd)*100).toFixed(2) : 0;
+  const avgCtd  = rRows.length ? rRows.reduce((s,a) => s + a.ctd, 0) / rRows.length : 0;
+  const maxKg   = Math.max(...rRows.map(a => a.desp), 0.001);
+
+  const scData = rRows.map(a => {
+    const rate = +((a.despUnd/a.ctd)*100).toFixed(2);
+    return { name: a.key, value: [a.ctd, rate, a.desp, a.despUnd],
+      symbolSize: 8 + Math.sqrt(a.desp/maxKg) * 32,
+      itemStyle: { color: rate > avgRate ? 'rgba(185,28,28,.65)' : 'rgba(10,77,140,.6)',
+                   borderColor: rate > avgRate ? '#b91c1c' : '#0a4d8c', borderWidth: 1 } };
+  });
 
   renderChart('chartWasteRate', {
     ...CHART_BASE,
-    tooltip: { ...TOOLTIP, trigger:'axis', axisPointer:{ type:'shadow' },
-      formatter: p => {
-        const item = rRows[p[0].dataIndex];
-        if (!item) return '';
-        const rate = rRates[p[0].dataIndex];
-        return `<div style="font-weight:600;">${escHtml(item.key)}</div>`
-          + `<div style="margin-top:4px;">Fabricadas: <b>${fmtInt(item.ctd)}</b> und</div>`
-          + `<div>Desperdicio: <b>${fmtInt(item.despUnd)}</b> und · ${fmtDec(item.desp)} Kg</div>`
-          + `<div>% Desperdicio: <b>${fmtPct(rate)}</b> <span style="opacity:.7">(prom. ${fmtPct(avgRate)})</span></div>`;
-      } },
-    legend: { top: 0, left: 'center', textStyle:{ color:'#64748b', fontSize: 11 }, itemGap: 14,
-      icon: 'rect', itemWidth: 10, itemHeight: 10 },
-    grid: { ...CHART_BASE.grid, top: 38, bottom: 100 },
-    xAxis: { ...AXIS, type:'category', data: rRows.map(a => truncate(a.key, 22)),
-      axisLabel: { ...AXIS.axisLabel, rotate: 35, fontSize: 10, interval: 0 } },
-    yAxis: [
-      { ...AXIS, type:'value', name:'Und fabricadas', nameTextStyle:{ color:'#94a3b8', fontSize: 10 },
-        axisLabel: { ...AXIS.axisLabel, formatter: v => fmtInt(v) } },
-      { ...AXIS, type:'value', name:'% Desp.', nameTextStyle:{ color:'#94a3b8', fontSize: 10 },
-        splitLine: { show: false },
-        axisLabel: { ...AXIS.axisLabel, formatter: v => v + '%' } }
-    ],
+    tooltip: { ...TOOLTIP, trigger:'item',
+      formatter: p => `<div style="font-weight:600;max-width:340px;white-space:normal;">${escHtml(p.name)}</div>`
+        + `<div style="margin-top:4px;">Fabricadas: <b>${fmtInt(p.value[0])}</b> und</div>`
+        + `<div>Desperdicio: <b>${fmtInt(p.value[3])}</b> und · ${fmtDec(p.value[2])} Kg</div>`
+        + `<div>% Desperdicio: <b>${fmtPct(p.value[1])}</b> <span style="opacity:.7">(prom. ${fmtPct(avgRate)})</span></div>` },
+    grid: { ...CHART_BASE.grid, top: 30, left: 16, right: 80 },
+    xAxis: { ...AXIS, type:'value', name:'Und fabricadas', nameTextStyle:{ color:'#94a3b8', fontSize: 10 },
+      axisLabel: { ...AXIS.axisLabel, formatter: v => fmtInt(v) } },
+    yAxis: { ...AXIS, type:'value', name:'% Desperdicio', nameTextStyle:{ color:'#94a3b8', fontSize: 10 },
+      axisLabel: { ...AXIS.axisLabel, formatter: v => v + '%' } },
     series: [
-      { name:'Und fabricadas', type:'bar', data: rRows.map(a => a.ctd),
-        itemStyle:{ color:'#0a4d8c', borderRadius:[3,3,0,0] }, barMaxWidth: 30 },
-      { name:'% Desperdicio', type:'line', yAxisIndex: 1, data: rRates, smooth: true,
-        lineStyle:{ color:'#b91c1c', width: 2 }, itemStyle:{ color:'#b91c1c' },
-        symbol:'circle', symbolSize: 6,
-        markLine: { silent:true, symbol:'none', data:[{ yAxis: avgRate,
-          label:{ formatter:'Prom. ' + fmtPct(avgRate), position:'insideEndTop', distance:4,
-                  color:'#b91c1c', fontSize:10, fontWeight:600,
-                  backgroundColor:'#fff', padding:[2,6], borderRadius:3,
-                  borderColor:'#b91c1c', borderWidth:1 },
-          lineStyle:{ color:'#b91c1c', type:'dashed', width:1 } }] }
+      { type:'scatter', data: scData,
+        label: { show:true, position:'top', fontSize: 9, color:'#475569',
+          formatter: p => truncate(p.name, 16) },
+        labelLayout: { hideOverlap: true },
+        emphasis: { label: { show:true, fontWeight:600 } },
+        markLine: { silent:true, symbol:'none',
+          lineStyle:{ type:'dashed', width:1 },
+          data: [
+            { yAxis: avgRate,
+              label:{ formatter:'Prom. ' + fmtPct(avgRate), position:'insideEndTop', distance:4,
+                      color:'#b91c1c', fontSize:10, fontWeight:600, backgroundColor:'#fff',
+                      padding:[2,6], borderRadius:3, borderColor:'#b91c1c', borderWidth:1 },
+              lineStyle:{ color:'#b91c1c' } },
+            { xAxis: +avgCtd.toFixed(0),
+              label:{ formatter:'Prom. und', position:'insideEndTop', distance:4,
+                      color:'#64748b', fontSize:10, backgroundColor:'#fff',
+                      padding:[2,6], borderRadius:3, borderColor:'#cbd5e1', borderWidth:1 },
+              lineStyle:{ color:'#94a3b8' } }
+          ] }
       }
     ]
   });
@@ -1783,9 +2028,80 @@ const PROD_DIMS = {
   machine:   { title:'máquina',    fn: r => r.Maquina },
   operator:  { title:'operario',   fn: r => r.Operario },
   supervisor:{ title:'supervisor', fn: r => r.Supervisor },
-  client:    { title:'cliente',    fn: r => r.Cliente }
+  client:    { title:'cliente',    fn: r => r.Cliente },
+  month:     { title:'mes',        fn: r => monthLabel(r.MonthKey) }
 };
+// Producción mes a mes — solo fondeadoras (producto terminado) · histórico completo
+// Ignora el filtro de fechas; respeta los filtros categóricos.
+function renderProdMonth() {
+  const pf = STATE.filters;
+  const pHistRows = STATE.raw.filter(r => {
+    if (!isFondeadora(r))                                       return false;
+    if (pf.machine.size     && !pf.machine.has(r.Maquina))      return false;
+    if (pf.shift.size       && !pf.shift.has(r.Turno))          return false;
+    if (pf.supervisor.size  && !pf.supervisor.has(r.Supervisor))return false;
+    if (pf.operator.size    && !pf.operator.has(r.Operario))    return false;
+    if (pf.client.size      && !pf.client.has(r.Cliente))       return false;
+    return true;
+  });
+  const pMonths = new Map();
+  for (const r of pHistRows) {
+    let a = pMonths.get(r.MonthKey);
+    if (!a) { a = { ctd:0, n:0 }; pMonths.set(r.MonthKey, a); }
+    a.ctd += r.Ctd; a.n++;
+  }
+  const pm = [...pMonths.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
+  const pmCtd = pm.map(r => r[1].ctd);
+
+  // Tendencia: regresión lineal
+  let pTrend = pm.map(() => null);
+  if (pm.length >= 2) {
+    const n = pm.length;
+    const sx = pmCtd.reduce((s,_,i)=>s+i,0), sy = pmCtd.reduce((s,v)=>s+v,0);
+    const sxx = pmCtd.reduce((s,_,i)=>s+i*i,0), sxy = pmCtd.reduce((s,v,i)=>s+i*v,0);
+    const slope = (n*sxy - sx*sy) / (n*sxx - sx*sx || 1);
+    const icept = (sy - slope*sx) / n;
+    pTrend = pm.map((_,i) => Math.round(icept + slope*i));
+  }
+
+  renderChart('chartProdMonth', {
+    ...CHART_BASE,
+    tooltip: { ...TOOLTIP, trigger:'axis', axisPointer:{ type:'shadow' },
+      formatter: p => {
+        const i = p[0].dataIndex;
+        return `<div style="font-weight:600;">${p[0].axisValue}</div>`
+          + `<div>${p[0].marker} Producción: <b>${fmtInt(pmCtd[i])}</b> und</div>`
+          + (pTrend[i]!=null ? `<div style="opacity:.75;">Tendencia: ${fmtInt(pTrend[i])} und</div>` : '')
+          + `<div style="opacity:.75;">${fmtInt(pm[i][1].n)} registros</div>`;
+      } },
+    legend: { top: 0, left: 'center', textStyle:{ color:'#64748b', fontSize: 11 }, itemGap: 14,
+      icon:'rect', itemWidth:10, itemHeight:10 },
+    grid: { ...CHART_BASE.grid, top: 36 },
+    xAxis: { ...AXIS, type:'category', data: pm.map(r=>monthLabel(r[0])) },
+    yAxis: { ...AXIS, type:'value', name:'Und', nameTextStyle:{color:'#94a3b8', fontSize:10},
+      axisLabel:{ ...AXIS.axisLabel, formatter: v=>fmtInt(v) } },
+    series: [
+      { name:'Producción', type:'bar', data: pmCtd,
+        itemStyle:{ color:'#0a4d8c', borderRadius:[3,3,0,0] }, barMaxWidth: 34,
+        label: { show:true, position:'top', color:'#0a4d8c', fontSize: 10,
+          formatter: p => fmtInt(p.value) } },
+      { name:'Tendencia', type:'line', data: pTrend, smooth:false, symbol:'none',
+        lineStyle:{ color:'#b45309', width:2, type:'dashed' }, itemStyle:{ color:'#b45309' } }
+    ]
+  });
+}
+
 function renderProductividad() {
+  // "Mes a mes": solo muestra la gráfica de producción mensual de fondeadoras
+  const isMonth = STATE.prodDim === 'month';
+  $('#prodKpiRow').style.display      = isMonth ? 'none' : '';
+  $('#prodDistCard').style.display    = isMonth ? 'none' : '';
+  $('#prodTableCard').style.display   = isMonth ? 'none' : '';
+  $('#prodVelCard').style.display     = isMonth ? 'none' : '';
+  $('#prodVelHistCard').style.display = isMonth ? 'none' : '';
+  $('#prodMonthCard').style.display   = isMonth ? '' : 'none';
+  if (isMonth) { renderProdMonth(); return; }
+
   const dim = PROD_DIMS[STATE.prodDim];
   $('#prodChartTitle').textContent = 'Distribución de tiempo por ' + dim.title;
   $('#prodTableTitle').textContent = 'Indicadores por ' + dim.title;
@@ -1870,11 +2186,11 @@ function renderProductividad() {
     </tr>`;
   }).join('') || '<tr><td colspan="11" class="muted" style="text-align:center;padding:20px;">Sin datos</td></tr>';
 
-  // Velocidad promedio — solo para máquina
-  const velCard = $('#prodVelCard');
-  if (STATE.prodDim !== 'machine') { velCard.style.display = 'none'; return; }
-  velCard.style.display = '';
-  const velArr = agg.filter(a => a.velN > 0).sort((a,b) => b.velAvg - a.velAvg).slice(0, 15);
+  // Velocidad promedio — siempre por máquina, sin importar la dimensión activa
+  const aggMachine = STATE.prodDim === 'machine'
+    ? agg
+    : groupAgg(STATE.filtered, PROD_DIMS.machine.fn);
+  const velArr = aggMachine.filter(a => a.velN > 0).sort((a,b) => b.velAvg - a.velAvg).slice(0, 15);
   renderChart('chartProdVel', {
     ...CHART_BASE,
     tooltip: { ...TOOLTIP, trigger:'axis', axisPointer:{ type:'shadow' },
@@ -1895,10 +2211,167 @@ function renderProductividad() {
       }
     ]
   });
+
+  // Evolución mensual histórica — corrida (h) + velocidad promedio.
+  // Ignora el filtro de fechas; respeta los filtros categóricos.
+  const f = STATE.filters;
+  const histRows = STATE.raw.filter(r => {
+    if (f.machine.size     && !f.machine.has(r.Maquina))      return false;
+    if (f.shift.size       && !f.shift.has(r.Turno))          return false;
+    if (f.machineType.size && !f.machineType.has(r.TipoMaq))  return false;
+    if (f.supervisor.size  && !f.supervisor.has(r.Supervisor))return false;
+    if (f.operator.size    && !f.operator.has(r.Operario))    return false;
+    if (f.client.size      && !f.client.has(r.Cliente))       return false;
+    return true;
+  });
+  const hMonths = new Map();
+  for (const r of histRows) {
+    let a = hMonths.get(r.MonthKey);
+    if (!a) { a = { tCorr:0, velSum:0, velN:0 }; hMonths.set(r.MonthKey, a); }
+    a.tCorr += r.TCorrida;
+    if (r.Vel > 0) { a.velSum += r.Vel; a.velN++; }
+  }
+  const hm = [...hMonths.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
+  const hVels = hm.map(r => r[1].velN ? +(r[1].velSum/r[1].velN).toFixed(1) : null);
+
+  // Tendencia: regresión lineal sobre los meses con dato
+  const pts = hVels.map((v,i) => [i,v]).filter(p => p[1] != null);
+  let trend = hm.map(() => null);
+  if (pts.length >= 2) {
+    const n = pts.length;
+    const sx = pts.reduce((s,p)=>s+p[0],0), sy = pts.reduce((s,p)=>s+p[1],0);
+    const sxx = pts.reduce((s,p)=>s+p[0]*p[0],0), sxy = pts.reduce((s,p)=>s+p[0]*p[1],0);
+    const slope = (n*sxy - sx*sy) / (n*sxx - sx*sx || 1);
+    const icept = (sy - slope*sx) / n;
+    trend = hm.map((_,i) => +(icept + slope*i).toFixed(1));
+  }
+
+  renderChart('chartProdVelHist', {
+    ...CHART_BASE,
+    tooltip: { ...TOOLTIP, trigger:'axis', axisPointer:{ type:'shadow' },
+      formatter: p => {
+        const i = p[0].dataIndex;
+        return `<div style="font-weight:600;">${p[0].axisValue}</div>`
+          + `<div>${p[0].marker} Vel. promedio: <b>${hVels[i]==null?'—':fmtDec(hVels[i])}</b> und/min</div>`
+          + (trend[i]!=null ? `<div style="opacity:.75;">Tendencia: ${fmtDec(trend[i])} und/min</div>` : '')
+          + `<div style="opacity:.75;">Corrida: ${fmtDec(hm[i][1].tCorr/60)} h · ${fmtInt(hm[i][1].velN)} registros</div>`;
+      } },
+    legend: { top: 0, left: 'center', textStyle:{ color:'#64748b', fontSize: 11 }, itemGap: 14,
+      icon:'rect', itemWidth:10, itemHeight:10 },
+    grid: { ...CHART_BASE.grid, top: 36 },
+    xAxis: { ...AXIS, type:'category', data: hm.map(r=>monthLabel(r[0])) },
+    yAxis: { ...AXIS, type:'value', name:'Und/min', nameTextStyle:{color:'#94a3b8', fontSize:10},
+      axisLabel:{ ...AXIS.axisLabel, formatter: v=>fmtInt(v) } },
+    series: [
+      { name:'Vel. promedio', type:'bar', data: hVels,
+        itemStyle:{ color:'#0a4d8c', borderRadius:[3,3,0,0] }, barMaxWidth: 34,
+        label: { show:true, position:'top', color:'#0a4d8c', fontSize: 10,
+          formatter: p => p.value==null?'':fmtDec(p.value) } },
+      { name:'Tendencia', type:'line', data: trend, smooth:false, symbol:'none',
+        lineStyle:{ color:'#b45309', width:2, type:'dashed' }, itemStyle:{ color:'#b45309' } }
+    ]
+  });
 }
 
 /* ===== PAROS ============================================================== */
 function renderParos() {
+  // Paradas de máquina mes a mes — histórico completo.
+  // Ignora el filtro de fechas; respeta los filtros categóricos.
+  const kf = STATE.filters;
+  const kHistRows = STATE.raw.filter(r => {
+    if (kf.machine.size     && !kf.machine.has(r.Maquina))      return false;
+    if (kf.shift.size       && !kf.shift.has(r.Turno))          return false;
+    if (kf.machineType.size && !kf.machineType.has(r.TipoMaq))  return false;
+    if (kf.supervisor.size  && !kf.supervisor.has(r.Supervisor))return false;
+    if (kf.operator.size    && !kf.operator.has(r.Operario))    return false;
+    if (kf.client.size      && !kf.client.has(r.Cliente))       return false;
+    return true;
+  });
+  const kMonths = new Map();
+  for (const r of kHistRows) {
+    let a = kMonths.get(r.MonthKey);
+    if (!a) { a = { mins:0, n:0, cuadre:0, nCuadre:0 }; kMonths.set(r.MonthKey, a); }
+    a.mins += r.TParos;
+    a.n += r.Paros.length;
+    a.cuadre += r.TCuadre;
+    if (r.TCuadre > 0) a.nCuadre++;
+  }
+  const km = [...kMonths.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
+  const kmHrs = km.map(r => +(r[1].mins/60).toFixed(1));
+
+  // Tendencia: regresión lineal
+  let kTrend = km.map(() => null);
+  if (km.length >= 2) {
+    const n = km.length;
+    const sx = kmHrs.reduce((s,_,i)=>s+i,0), sy = kmHrs.reduce((s,v)=>s+v,0);
+    const sxx = kmHrs.reduce((s,_,i)=>s+i*i,0), sxy = kmHrs.reduce((s,v,i)=>s+i*v,0);
+    const slope = (n*sxy - sx*sy) / (n*sxx - sx*sx || 1);
+    const icept = (sy - slope*sx) / n;
+    kTrend = km.map((_,i) => +(icept + slope*i).toFixed(1));
+  }
+
+  renderChart('chartParosMes', {
+    ...CHART_BASE,
+    tooltip: { ...TOOLTIP, trigger:'axis', axisPointer:{ type:'shadow' },
+      formatter: p => {
+        const i = p[0].dataIndex;
+        return `<div style="font-weight:600;">${p[0].axisValue}</div>`
+          + `<div>${p[0].marker} Paros: <b>${fmtDec(kmHrs[i])}</b> h</div>`
+          + (kTrend[i]!=null ? `<div style="opacity:.75;">Tendencia: ${fmtDec(kTrend[i])} h</div>` : '')
+          + `<div style="opacity:.75;">${fmtInt(km[i][1].n)} eventos de paro</div>`;
+      } },
+    legend: { top: 0, left: 'center', textStyle:{ color:'#64748b', fontSize: 11 }, itemGap: 14,
+      icon:'rect', itemWidth:10, itemHeight:10 },
+    grid: { ...CHART_BASE.grid, top: 36 },
+    xAxis: { ...AXIS, type:'category', data: km.map(r=>monthLabel(r[0])) },
+    yAxis: { ...AXIS, type:'value', name:'Horas', nameTextStyle:{color:'#94a3b8', fontSize:10} },
+    series: [
+      { name:'Horas de paro', type:'bar', data: kmHrs,
+        itemStyle:{ color:'#b91c1c', borderRadius:[3,3,0,0] }, barMaxWidth: 34,
+        label: { show:true, position:'top', color:'#b91c1c', fontSize: 10,
+          formatter: p => fmtDec(p.value) } },
+      { name:'Tendencia', type:'line', data: kTrend, smooth:false, symbol:'none',
+        lineStyle:{ color:'#b45309', width:2, type:'dashed' }, itemStyle:{ color:'#b45309' } }
+    ]
+  });
+
+  // Cuadres de máquina mes a mes — misma lógica, columna T Cuadre
+  const cmHrs = km.map(r => +(r[1].cuadre/60).toFixed(1));
+  let cTrend = km.map(() => null);
+  if (km.length >= 2) {
+    const n = km.length;
+    const sx = cmHrs.reduce((s,_,i)=>s+i,0), sy = cmHrs.reduce((s,v)=>s+v,0);
+    const sxx = cmHrs.reduce((s,_,i)=>s+i*i,0), sxy = cmHrs.reduce((s,v,i)=>s+i*v,0);
+    const slope = (n*sxy - sx*sy) / (n*sxx - sx*sx || 1);
+    const icept = (sy - slope*sx) / n;
+    cTrend = km.map((_,i) => +(icept + slope*i).toFixed(1));
+  }
+
+  renderChart('chartCuadresMes', {
+    ...CHART_BASE,
+    tooltip: { ...TOOLTIP, trigger:'axis', axisPointer:{ type:'shadow' },
+      formatter: p => {
+        const i = p[0].dataIndex;
+        return `<div style="font-weight:600;">${p[0].axisValue}</div>`
+          + `<div>${p[0].marker} Cuadre: <b>${fmtDec(cmHrs[i])}</b> h</div>`
+          + (cTrend[i]!=null ? `<div style="opacity:.75;">Tendencia: ${fmtDec(cTrend[i])} h</div>` : '')
+          + `<div style="opacity:.75;">${fmtInt(km[i][1].nCuadre)} registros con cuadre</div>`;
+      } },
+    legend: { top: 0, left: 'center', textStyle:{ color:'#64748b', fontSize: 11 }, itemGap: 14,
+      icon:'rect', itemWidth:10, itemHeight:10 },
+    grid: { ...CHART_BASE.grid, top: 36 },
+    xAxis: { ...AXIS, type:'category', data: km.map(r=>monthLabel(r[0])) },
+    yAxis: { ...AXIS, type:'value', name:'Horas', nameTextStyle:{color:'#94a3b8', fontSize:10} },
+    series: [
+      { name:'Horas de cuadre', type:'bar', data: cmHrs,
+        itemStyle:{ color:'#0a4d8c', borderRadius:[3,3,0,0] }, barMaxWidth: 34,
+        label: { show:true, position:'top', color:'#0a4d8c', fontSize: 10,
+          formatter: p => fmtDec(p.value) } },
+      { name:'Tendencia', type:'line', data: cTrend, smooth:false, symbol:'none',
+        lineStyle:{ color:'#b45309', width:2, type:'dashed' }, itemStyle:{ color:'#b45309' } }
+    ]
+  });
+
   const m = new Map();
   for (const r of STATE.filtered) for (const p of r.Paros) {
     let a = m.get(p.cause);
