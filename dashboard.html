@@ -685,6 +685,16 @@ body.printing .print-header .meta { font-size: 10pt; color: #64748b; margin-top:
     <div class="card">
       <div class="card-head">
         <div>
+          <div class="card-title">Producción mes a mes</div>
+          <div class="card-sub">Producto terminado (solo fondeadoras) · histórico completo (ignora el filtro de fechas) · barras: unidades producidas por mes · línea punteada: tendencia</div>
+        </div>
+      </div>
+      <div class="chart h-340" id="chartResumenMonth"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div>
           <div class="card-title">Producto terminado y desperdicio · diario</div>
           <div class="card-sub">Barras: unidades terminadas (fondeadoras) · Línea: desperdicio Kg (todos los procesos) · Banda: promedio del periodo</div>
         </div>
@@ -1628,6 +1638,9 @@ function renderResumen() {
       <div class="k-foot">${k.foot}</div>
     </div>`).join('');
 
+  // Producción mes a mes — misma gráfica de la subpestaña "Mes a mes" de Productividad
+  renderProdMonth('chartResumenMonth');
+
   // Daily chart — Producto terminado (fondeadoras) + desperdicio total, con línea promedio
   const byDay = new Map();
   for (const r of d) {
@@ -2033,7 +2046,7 @@ const PROD_DIMS = {
 };
 // Producción mes a mes — solo fondeadoras (producto terminado) · histórico completo
 // Ignora el filtro de fechas; respeta los filtros categóricos.
-function renderProdMonth() {
+function renderProdMonth(chartId = 'chartProdMonth') {
   const pf = STATE.filters;
   const pHistRows = STATE.raw.filter(r => {
     if (!isFondeadora(r))                                       return false;
@@ -2064,7 +2077,7 @@ function renderProdMonth() {
     pTrend = pm.map((_,i) => Math.round(icept + slope*i));
   }
 
-  renderChart('chartProdMonth', {
+  renderChart(chartId, {
     ...CHART_BASE,
     tooltip: { ...TOOLTIP, trigger:'axis', axisPointer:{ type:'shadow' },
       formatter: p => {
@@ -2093,12 +2106,14 @@ function renderProdMonth() {
 
 function renderProductividad() {
   // "Mes a mes": solo muestra la gráfica de producción mensual de fondeadoras
-  const isMonth = STATE.prodDim === 'month';
+  const isMonth   = STATE.prodDim === 'month';
+  const isMachine = STATE.prodDim === 'machine';
   $('#prodKpiRow').style.display      = isMonth ? 'none' : '';
   $('#prodDistCard').style.display    = isMonth ? 'none' : '';
   $('#prodTableCard').style.display   = isMonth ? 'none' : '';
-  $('#prodVelCard').style.display     = isMonth ? 'none' : '';
-  $('#prodVelHistCard').style.display = isMonth ? 'none' : '';
+  // Gráficas de velocidad: solo en la subpestaña Máquina
+  $('#prodVelCard').style.display     = isMachine ? '' : 'none';
+  $('#prodVelHistCard').style.display = isMachine ? '' : 'none';
   $('#prodMonthCard').style.display   = isMonth ? '' : 'none';
   if (isMonth) { renderProdMonth(); return; }
 
@@ -2186,10 +2201,9 @@ function renderProductividad() {
     </tr>`;
   }).join('') || '<tr><td colspan="11" class="muted" style="text-align:center;padding:20px;">Sin datos</td></tr>';
 
-  // Velocidad promedio — siempre por máquina, sin importar la dimensión activa
-  const aggMachine = STATE.prodDim === 'machine'
-    ? agg
-    : groupAgg(STATE.filtered, PROD_DIMS.machine.fn);
+  // Gráficas de velocidad — solo en la subpestaña Máquina
+  if (!isMachine) return;
+  const aggMachine = agg;
   const velArr = aggMachine.filter(a => a.velN > 0).sort((a,b) => b.velAvg - a.velAvg).slice(0, 15);
   renderChart('chartProdVel', {
     ...CHART_BASE,
