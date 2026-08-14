@@ -1,6 +1,6 @@
 ╔══════════════════════════════════════════════════════════════════╗
-║  INFORME DE PRODUCCIÓN · SMURFIT WESTROCK                        ║
-║  Dashboard offline · versión piloto                              ║
+║  INFORME DE PRODUCCIÓN · ODEMPA                                  ║
+║  Dashboard offline · versión 1.3                                 ║
 ╚══════════════════════════════════════════════════════════════════╝
 
 QUÉ ES
@@ -9,13 +9,19 @@ Aplicación web de escritorio para visualizar el Informe de Producción
 Consolidado. Funciona 100% en el navegador, sin servidor, sin instalación,
 sin enviar datos a internet. El Excel nunca sale de tu computador.
 
+También está publicada en línea (misma aplicación, mismos principios):
+  https://dduenas2.github.io/informe-produccion-smurfit/
+
 
 CONTENIDO DE LA CARPETA
 ───────────────────────
   dashboard.html      → la aplicación (abrir con doble clic)
+  index.html          → redirección para la versión en línea
   lib/                → librerías locales (SheetJS + ECharts)
     ├─ xlsx.full.min.js
     └─ echarts.min.js
+  Logos/              → logos de la empresa
+  README.md           → documentación del repositorio (GitHub)
   LEEME.txt           → este archivo
 
 
@@ -53,11 +59,17 @@ CARACTERÍSTICAS DE SEGURIDAD
 DATOS / CONCEPTOS CLAVE
 ───────────────────────
   · "Producto terminado" = unidades producidas SOLO en FONDEADORAS
-     (es el producto final que sale de planta).
-  · "Desperdicio total" = suma de TODAS las máquinas (impresora,
+     (es el producto final que sale de planta). En Resumen se ve el
+     detalle por fondeadora: 2377, 2360-1 y 2360-2.
+  · "% Desperdicio" = unidades desperdiciadas / unidades fabricadas.
+     Fórmula unificada en todo el dashboard.
+  · "Desperdicio total (Kg)" = suma de TODAS las máquinas (impresora,
      tubuladora y fondeadora generan desperdicio real en su etapa).
   · Todos los tiempos se muestran en HORAS (h); los originales del
      Excel vienen en minutos.
+  · Las gráficas de "evolución mensual" y "mes a mes" usan el
+     histórico completo (ignoran el filtro de fechas), pero sí
+     respetan los filtros de máquina, turno, operario, etc.
 
 
 ACTUALIZACIÓN DIARIA
@@ -85,5 +97,11 @@ SOPORTE
   Proyecto en fase piloto. Para reportar observaciones o solicitar
   mejoras, contactar al responsable del proyecto.
 
-  Versión:  1.0  (piloto)
-  Fecha:    abril 2026
+  Versión:  1.3
+  Fecha:    agosto 2026
+
+  Novedades v1.3:
+    · Fórmula de % desperdicio unificada (und. desp / und. fabricadas)
+    · Detalle por fondeadora en Resumen (producto terminado)
+    · Subpestaña "Mes a mes" en Productividad (fondeadoras + tendencia)
+    · Evolución mensual de paros y cuadres en la pestaña Paros
